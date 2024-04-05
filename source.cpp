@@ -23,8 +23,8 @@ typedef struct {
 //================================================
 BALL     Ball;
 LONGLONG fpsTimer, deltaTimer;
-bool     MouseLeftPress;
-CRD      MousePressPos;
+bool     MouseLeftPress, MouseLeftRelease;
+CRD      MousePressPos, MouseReleasePos;
 
 //================================================
 // FPS‚ÌŒv‘ª‚Æ•`‰æ
@@ -66,7 +66,7 @@ void Init(void)
 	fpsTimer = deltaTimer = GetNowHiPerformanceCount();
 
 	Ball.POS.X = 320, Ball.POS.Y = 240;
-	Ball.SPEED.X = 300, Ball.SPEED.Y = 200;
+	Ball.SPEED.X = 0, Ball.SPEED.Y = 0;
 	Ball.RADIUS = 20;
 
 	SetDrawScreen(DX_SCREEN_BACK);
@@ -87,14 +87,22 @@ void Input(void)
 {
 	int button, x, y, type;
 
-	MouseLeftPress = false;
+	MouseLeftPress = MouseLeftRelease = false;
 
 	if (GetMouseInputLog2(&button, &x, &y, &type, TRUE) == 0)
 	{
-		if ((button & MOUSE_INPUT_LEFT) != 0 && type == MOUSE_INPUT_LOG_DOWN)
+		if ((button & MOUSE_INPUT_LEFT) != 0)
 		{
-			MouseLeftPress = true;
-			MousePressPos.X = (float)x, MousePressPos.Y = (float)y;
+			if (type == MOUSE_INPUT_LOG_DOWN)
+			{
+				MouseLeftPress = true;
+				MousePressPos.X = (float)x, MousePressPos.Y = (float)y;
+			}
+			else if (type == MOUSE_INPUT_LOG_UP)
+			{
+				MouseLeftRelease = true;
+				MouseReleasePos.X = (float)x, MouseReleasePos.Y = (float)y;
+			}
 		}
 	}
 }
@@ -130,10 +138,20 @@ void Update(void)
 	}
 
 	double d = pow(Ball.POS.X - MousePressPos.X, 2) + pow(Ball.POS.Y - MousePressPos.Y, 2);
-	
+	static int pressTime = 0;
+
 	if (MouseLeftPress && d <= pow(Ball.RADIUS, 2))
 	{
 		Ball.SPEED.X = Ball.SPEED.Y = 0;
+		pressTime = GetNowCount();
+	}
+	else if (MouseLeftRelease && pressTime > 0)
+	{
+		int now = GetNowCount();
+		Ball.SPEED.X = (MouseReleasePos.X - MousePressPos.X) * 1000.0f / (now - pressTime);
+		Ball.SPEED.Y = (MouseReleasePos.Y - MousePressPos.Y) * 1000.0f / (now - pressTime);
+
+		pressTime = 0;
 	}
 }
 
