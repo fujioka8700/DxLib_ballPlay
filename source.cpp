@@ -5,6 +5,7 @@
 // Copyright (c) fujioka8700 All rights reserved.
 //************************************************
 
+#include <math.h>
 #include <Dxlib.h>
 
 typedef struct {
@@ -12,16 +13,18 @@ typedef struct {
 } CRD; // coordinate
 
 typedef struct {
-	CRD POS;
-	CRD SPEED;
+	CRD	  POS;
+	CRD   SPEED;
 	float RADIUS;
 } BALL;
 
 //================================================
 // グローバル変数宣言
 //================================================
-BALL Ball;
+BALL     Ball;
 LONGLONG fpsTimer, deltaTimer;
+bool     MouseLeftPress;
+CRD      MousePressPos;
 
 //================================================
 // FPSの計測と描画
@@ -63,7 +66,7 @@ void Init(void)
 	fpsTimer = deltaTimer = GetNowHiPerformanceCount();
 
 	Ball.POS.X = 320, Ball.POS.Y = 240;
-	Ball.SPEED.X = 200, Ball.SPEED.Y = 200;
+	Ball.SPEED.X = 300, Ball.SPEED.Y = 200;
 	Ball.RADIUS = 20;
 
 	SetDrawScreen(DX_SCREEN_BACK);
@@ -82,7 +85,18 @@ void End(void)
 //================================================
 void Input(void)
 {
+	int button, x, y, type;
 
+	MouseLeftPress = false;
+
+	if (GetMouseInputLog2(&button, &x, &y, &type, TRUE) == 0)
+	{
+		if ((button & MOUSE_INPUT_LEFT) != 0 && type == MOUSE_INPUT_LOG_DOWN)
+		{
+			MouseLeftPress = true;
+			MousePressPos.X = (float)x, MousePressPos.Y = (float)y;
+		}
+	}
 }
 
 //================================================
@@ -113,6 +127,13 @@ void Update(void)
 	else if (Ball.POS.Y - Ball.RADIUS < 0.0f) {
 		Ball.POS.Y = Ball.RADIUS;
 		Ball.SPEED.Y *= -1;
+	}
+
+	double d = pow(Ball.POS.X - MousePressPos.X, 2) + pow(Ball.POS.Y - MousePressPos.Y, 2);
+	
+	if (MouseLeftPress && d <= pow(Ball.RADIUS, 2))
+	{
+		Ball.SPEED.X = Ball.SPEED.Y = 0;
 	}
 }
 
