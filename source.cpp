@@ -8,6 +8,11 @@
 #include <math.h>
 #include <Dxlib.h>
 
+#define WIDTH  640
+#define HEIGHT 480
+#define BALLPOSX 320
+#define BALLPOSY 240
+
 typedef struct {
 	float X, Y;
 } CRD; // coordinate
@@ -65,7 +70,7 @@ void Init(void)
 {
 	fpsTimer = deltaTimer = GetNowHiPerformanceCount();
 
-	Ball.POS.X = 320, Ball.POS.Y = 240;
+	Ball.POS.X = BALLPOSX, Ball.POS.Y = BALLPOSY;
 	Ball.SPEED.X = 0, Ball.SPEED.Y = 0;
 	Ball.RADIUS = 20;
 
@@ -108,6 +113,29 @@ void Input(void)
 }
 
 //================================================
+// ダブルクリックで、ボールを初期位置に戻す
+//================================================
+void CheckDoubleClick()
+{
+	const int DOUBLE_CLICK_INTERVAL = 300;
+	static int lastClickTime = 0;
+	int now = GetNowCount();
+
+	if (MouseLeftPress && lastClickTime == 0)
+	{
+		lastClickTime = now;
+	}
+	else if (MouseLeftPress && now - lastClickTime <= DOUBLE_CLICK_INTERVAL) {
+		Ball.POS.X = BALLPOSX, Ball.POS.Y = BALLPOSY;
+		Ball.SPEED.X = 0, Ball.SPEED.Y = 0;
+		lastClickTime = 0;
+	}
+	else if (now - lastClickTime > DOUBLE_CLICK_INTERVAL) {
+		lastClickTime = 0;
+	}
+}
+
+//================================================
 // 更新処理
 //================================================
 void Update(void)
@@ -116,10 +144,10 @@ void Update(void)
 
 	Ball.POS.X += Ball.SPEED.X * deltaTime;
 	Ball.POS.Y += Ball.SPEED.Y * deltaTime;
-
-	if (Ball.POS.X + Ball.RADIUS >= 640.0f)
+	
+	if (Ball.POS.X + Ball.RADIUS >= (float)WIDTH)
 	{
-		Ball.POS.X = 640.0f - Ball.RADIUS;
+		Ball.POS.X = (float)WIDTH - Ball.RADIUS;
 		Ball.SPEED.X *= -1;
 	}
 	else if (Ball.POS.X - Ball.RADIUS < 0.0f) {
@@ -127,9 +155,9 @@ void Update(void)
 		Ball.SPEED.X *= -1;
 	}
 
-	if (Ball.POS.Y + Ball.RADIUS >= 480.0f)
+	if (Ball.POS.Y + Ball.RADIUS >= (float)HEIGHT)
 	{
-		Ball.POS.Y = 480.0f - Ball.RADIUS;
+		Ball.POS.Y = (float)HEIGHT - Ball.RADIUS;
 		Ball.SPEED.Y *= -1;
 	}
 	else if (Ball.POS.Y - Ball.RADIUS < 0.0f) {
@@ -153,6 +181,8 @@ void Update(void)
 
 		pressTime = 0;
 	}
+
+	CheckDoubleClick();
 }
 
 //================================================
@@ -179,6 +209,8 @@ int WINAPI WinMain(
 	SetOutApplicationLogValidFlag(FALSE);
 #endif // !_DEBUG
 
+	SetMainWindowText("マウスで玉遊び(基本)");
+	SetGraphMode(WIDTH, HEIGHT, 32);
 	ChangeWindowMode(TRUE);
 
 	if (DxLib_Init() == -1) return -1;
